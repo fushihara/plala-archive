@@ -1,0 +1,19 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Launch Program",
+      "runtimeExecutable": "tsx",
+      "runtimeArgs": [
+        "--env-file-if-exists",
+        ".env"
+      ],
+      "program": "${file}",
+      "cwd": "${workspaceFolder}",
+      "console": "internalConsole",
+      "outputCapture": "std"
+    }
+  ]
+}

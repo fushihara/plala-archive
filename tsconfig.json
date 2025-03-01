@@ -1,0 +1,24 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "Preserve",
+    "lib": [
+      "esnext",
+      "DOM",
+      "DOM.Iterable",
+    ],
+    "noEmit": true,
+    "strict": true,
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "allowImportingTsExtensions": true,
+    "rewriteRelativeImportExtensions": true,
+    "types": [
+      // "vitest/globals", // .test.ts の中で直接itやexceptを使う時はコメントを解除する
+      "vitest/importMeta", // In-Source テストを行う時はコメントを解除する
+    ]
+  },
+  "ts-node": {
+    "files": true
+  }
+}

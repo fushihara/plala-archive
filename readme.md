@@ -1,0 +1,3 @@
+- 実行環境:node.js / tsx
+- 言語:typescript
+- @types/node は実行されるnodeのバージョンによって入れ替えていいかも
