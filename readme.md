@@ -1,3 +1,6 @@
-- 実行環境:node.js / tsx
-- 言語:typescript
-- @types/node は実行されるnodeのバージョンによって入れ替えていいかも
+- esaのhttp キャッシュのdbテンプレートにsqliteのバージョンを追加
+- esaのkyselyのページにsqliteで日付を取る方法を追加
+- kyselyの使い方でhttpキャッシュを切り出した書き方が出来ないか確認
+- kyselyの使い方でmiscが出来ないか確認
+- fetchHttpで後からDBに保存するコードをesaに書く。スラドのプロジェクトにあったっけ？
+- とにかく、fetchHttp一式をesaにまとめる

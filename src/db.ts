@@ -1,0 +1,210 @@
+import SQLite from "better-sqlite3"
+import {
+  Kysely,
+  sql,
+  SqliteDialect,
+  type Generated,
+  type ValueExpression,
+} from 'kysely'
+interface DbType {
+  http_request_result: {
+    id: Generated<number>;
+    primary_key: string;
+    url: string;
+    request_method: "GET" | "POST";
+    request_header: string;
+    response_code: number;
+    response_header: string;
+    response_binary: Buffer;
+    insert_program_version: string;
+    created_at: string;
+    updated_at: string;
+  },
+  ia_plala_base_url_list: {
+    id: Generated<number>;
+    base_url: string;
+    insert_program_version: string;
+    created_at: string;
+    updated_at: string;
+  },
+  plala_town_space_list: {
+    id: Generated<number>;
+    source_ia_pkey: string;
+    base_url: string;
+    title: string;
+    description: string;
+    insert_program_version: string;
+    created_at: string;
+    updated_at: string;
+  }
+}
+const insert_program_version = date2Sql(new Date('2025-03-04T10:52:37.961Z'));
+export class Database {
+  private db!: Kysely<DbType>;
+  async init() {
+    this.db = new Kysely<DbType>({
+      dialect: new SqliteDialect({ database: new SQLite("database.db") }),
+      // log(event): void {
+      //   if (event.level === "query") {
+      //     console.log(event.query.sql);
+      //     console.log(event.query.parameters);
+      //   }
+      // },
+    });
+    await sql<DbType>`
+    CREATE TABLE IF NOT EXISTS http_request_result(
+      id                     INTEGER NOT NULL PRIMARY KEY,
+      primary_key            TEXT    NOT NULL UNIQUE CHECK(primary_key<>''),
+      url                    TEXT    NOT NULL,
+      request_method         TEXT    NOT NULL CHECK(request_method='GET' OR request_method='POST'),
+      request_header         TEXT    NOT NULL CHECK(json_valid(request_header)),
+      response_code          INTEGER NOT NULL CHECK( 0 < response_code ),
+      response_header        TEXT    NOT NULL CHECK(json_valid(response_header)),
+      response_binary        BLOB    NOT NULL,
+      insert_program_version TEXT    NOT NULL,
+      created_at             TEXT    NOT NULL,
+      updated_at             TEXT    NOT NULL
+    ) strict;`.execute(this.db);
+    await sql<DbType>`
+    CREATE TABLE IF NOT EXISTS ia_plala_base_url_list(
+      id                     INTEGER NOT NULL PRIMARY KEY,
+      base_url               TEXT    NOT NULL UNIQUE CHECK(base_url<>''),
+      insert_program_version TEXT    NOT NULL,
+      created_at             TEXT    NOT NULL,
+      updated_at             TEXT    NOT NULL
+    ) strict;`.execute(this.db);
+    await sql<DbType>`
+    CREATE TABLE IF NOT EXISTS plala_town_space_list(
+      id                     INTEGER NOT NULL PRIMARY KEY,
+      source_ia_pkey         TEXT    NOT NULL CHECK(source_ia_pkey<>''),
+      base_url               TEXT    NOT NULL CHECK(base_url<>''),
+      title                  TEXT    NOT NULL,
+      description            TEXT    NOT NULL,
+      insert_program_version TEXT    NOT NULL,
+      created_at             TEXT    NOT NULL,
+      updated_at             TEXT    NOT NULL,
+      UNIQUE(source_ia_pkey,base_url)
+    ) strict ;`.execute(this.db);
+  }
+  async getPrimaryKeyList(prefix: string) {
+    const res = await this.db
+      .selectFrom("http_request_result")
+      .select("http_request_result.primary_key")
+      .where("primary_key", "like", `${prefix}%`)
+      .execute();
+    return res?.map(v => v.primary_key) ?? [];
+  }
+  async getPrimaryKey(pk: string) {
+    const res = await this.db
+      .selectFrom("http_request_result")
+      .selectAll()
+      .where("primary_key", "=", pk)
+      .limit(1)
+      .execute();
+    return res?.[0];
+  }
+  async saveResponse(
+    primaryKey: string,
+    url: string,
+    method: "GET" | "POST",
+    requestHeader: Record<string, string>,
+    responseCode: number,
+    responseHeader: Record<string, string>,
+    responseBinary: Buffer,
+  ) {
+    await this
+      .db
+      .insertInto("http_request_result")
+      .values({
+        primary_key: primaryKey,
+        url: url,
+        request_method: method,
+        request_header: sortRecord(requestHeader),
+        response_code: responseCode,
+        response_header: sortRecord(responseHeader),
+        response_binary: responseBinary,
+        insert_program_version: insert_program_version,
+        created_at: date2Sql(new Date()),
+        updated_at: date2Sql(new Date()),
+      })
+      .onConflict(cb =>
+        cb.column("primary_key").doUpdateSet({
+          url: url,
+          request_method: method,
+          request_header: sortRecord(requestHeader),
+          response_code: responseCode,
+          response_header: sortRecord(responseHeader),
+          response_binary: responseBinary,
+          insert_program_version: insert_program_version,
+          //created_at: date2Sql(new Date()),
+          updated_at: date2Sql(new Date()),
+        })
+      )
+      .execute();
+  }
+  async getBaseUrlList() {
+    const baseUrlList = new Set<string>();
+    await this.db.selectFrom("ia_plala_base_url_list").select("base_url").execute().then(l => {
+      l.forEach(i => {
+        baseUrlList.add(i.base_url);
+      });
+    });
+    await this.db.selectFrom("plala_town_space_list").select("base_url").execute().then(l => {
+      l.forEach(i => {
+        baseUrlList.add(i.base_url);
+      });
+    });
+    return baseUrlList;
+  }
+  async replaceIaPlalaBaseUrl(baseUrlList: Set<string>) {
+    await this.db.deleteFrom("ia_plala_base_url_list").execute();
+    await this.db.transaction().execute(async (trx) => {
+      for (const baseUrl of [...baseUrlList].toSorted()) {
+        await trx.insertInto("ia_plala_base_url_list")
+          .values({
+            base_url: baseUrl,
+            insert_program_version: insert_program_version,
+            created_at: date2Sql(new Date()),
+            updated_at: date2Sql(new Date()),
+          }).execute();
+      }
+    });
+  }
+  async replacePlalaTownSpaceList(list: {
+    sourceIaPkey: string,
+    baseUrl: string,
+    title: string,
+    description: string,
+  }[]) {
+    await this.db.deleteFrom("plala_town_space_list").execute();
+    await this.db.transaction().execute(async (trx) => {
+      for (const item of list) {
+        await trx.insertInto("plala_town_space_list")
+          .values({
+            base_url: item.baseUrl,
+            source_ia_pkey: item.sourceIaPkey,
+            title: item.title,
+            description: item.description,
+            insert_program_version: insert_program_version,
+            created_at: date2Sql(new Date()),
+            updated_at: date2Sql(new Date()),
+          }).execute();
+      }
+    });
+  }
+}
+export const dbInstance = new Database();
+export type dbInstance = typeof dbInstance;
+function sortRecord(data: Record<string, string>) {
+  const sortedData = Object.fromEntries(
+    Object.entries(data).sort((a, b) => {
+      return a[0].localeCompare(b[0]);
+    }),
+  );
+  const jsonString = JSON.stringify(sortedData);
+  return jsonString;
+}
+function date2Sql(date: Date) {
+  const result = sql<string>`strftime('%F %R:%f',${date.getTime() / 1000},'unixepoch')`;
+  return result;
+}
