@@ -36,6 +36,23 @@ interface DbType {
     insert_program_version: string;
     created_at: string;
     updated_at: string;
+  },
+  active_plala_hp_space_list: {
+    id: Generated<number>;
+    base_url: string;
+    title: string;
+    last_up: string | null;
+    insert_program_version: string;
+    created_at: string;
+    updated_at: string;
+  },
+  active_plala_hp_space_child_file_list: {
+    id: Generated<number>;
+    base_url: string;
+    child_url: string;
+    insert_program_version: string;
+    created_at: string;
+    updated_at: string;
   }
 }
 const insert_program_version = date2Sql(new Date('2025-03-04T10:52:37.961Z'));
@@ -84,6 +101,24 @@ export class Database {
       created_at             TEXT    NOT NULL,
       updated_at             TEXT    NOT NULL,
       UNIQUE(source_ia_pkey,base_url)
+    ) strict ;`.execute(this.db);
+    await sql<DbType>`CREATE TABLE IF NOT EXISTS active_plala_hp_space_list(
+      id                     INTEGER NOT NULL PRIMARY KEY,
+      base_url               TEXT    NOT NULL UNIQUE CHECK(base_url<>''),
+      title                  TEXT    NOT NULL,
+      last_up                TEXT        NULL,
+      insert_program_version TEXT    NOT NULL,
+      created_at             TEXT    NOT NULL,
+      updated_at             TEXT    NOT NULL
+    ) strict ;`.execute(this.db);
+    await sql<DbType>`CREATE TABLE IF NOT EXISTS active_plala_hp_space_child_file_list(
+      id                     INTEGER NOT NULL PRIMARY KEY,
+      base_url               TEXT    NOT NULL CHECK(base_url<>''),
+      child_url              TEXT    NOT NULL CHECK(child_url<>''),
+      insert_program_version TEXT    NOT NULL,
+      created_at             TEXT    NOT NULL,
+      updated_at             TEXT    NOT NULL,
+      UNIQUE(base_url,child_url)
     ) strict ;`.execute(this.db);
   }
   async getPrimaryKeyList(prefix: string) {
@@ -185,6 +220,61 @@ export class Database {
             source_ia_pkey: item.sourceIaPkey,
             title: item.title,
             description: item.description,
+            insert_program_version: insert_program_version,
+            created_at: date2Sql(new Date()),
+            updated_at: date2Sql(new Date()),
+          }).execute();
+      }
+    });
+  }
+  async replaceActivePlalaHpSpaceList(
+    list: {
+      baseUrl: string,
+      title: string,
+      lastUpdateAt: Date | null,
+    }[]
+  ) {
+    await this.db.deleteFrom("active_plala_hp_space_list").execute();
+    await this.db.transaction().execute(async (trx) => {
+      for (const item of list) {
+        await trx.insertInto("active_plala_hp_space_list")
+          .values({
+            base_url: item.baseUrl,
+            title: item.title,
+            last_up: item.lastUpdateAt ? date2Sql(item.lastUpdateAt) : null,
+            insert_program_version: insert_program_version,
+            created_at: date2Sql(new Date()),
+            updated_at: date2Sql(new Date()),
+          }).execute();
+      }
+    });
+  }
+  async getActivePlalaHpSpaceListUrl() {
+    const baseUrlList = await this.db
+      .selectFrom("active_plala_hp_space_list")
+      .select("active_plala_hp_space_list.base_url")
+      .execute()
+      .then(r => r.map(i => i.base_url));
+    return baseUrlList;
+  }
+  async isActivePlalaHpSpaceChildFileExist(baseUrl: string) {
+    const hasData = await this.db
+      .selectFrom("active_plala_hp_space_child_file_list")
+      .select("active_plala_hp_space_child_file_list.id")
+      .where("base_url", "=", baseUrl)
+      .limit(1)
+      .execute()
+      .then(r => r?.[0]?.id != null);
+    return hasData;
+  }
+  async replaceActivePlalaHpSpaceChildFileList(baseUrl: string, childFileList: string[]) {
+    await this.db.deleteFrom("active_plala_hp_space_child_file_list").where("base_url", "=", baseUrl).execute();
+    await this.db.transaction().execute(async (trx) => {
+      for (const item of childFileList) {
+        await trx.insertInto("active_plala_hp_space_child_file_list")
+          .values({
+            base_url: baseUrl,
+            child_url: item,
             insert_program_version: insert_program_version,
             created_at: date2Sql(new Date()),
             updated_at: date2Sql(new Date()),

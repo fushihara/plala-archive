@@ -27,6 +27,7 @@ for await (const line of rl) {
   originalUrlObj.pathname = originalUrlObj.pathname.replace(/^(\/[^\/]+\/).+/, "$1")
   originalUrlObj.search = "";
   originalUrlObj.protocol = "http:";
+  originalUrlObj.hash = "";
   if (
     !originalUrlObj.host.match(/^www\d+\.plala\.or\.jp$/) ||
     originalUrlObj.pathname.startsWith("//") ||
