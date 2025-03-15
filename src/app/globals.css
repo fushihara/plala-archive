@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+h1,
+a,li,ul {
+  all: revert;
+  margin: 0;
+}
