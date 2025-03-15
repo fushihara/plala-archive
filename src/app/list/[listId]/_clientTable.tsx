@@ -10,7 +10,7 @@ export function ClientTable(
   return (
     <div className="font-mono">
       <div className="container mx-auto">
-        <PagenationElement now={params.data.nowPageCount} max={params.data.totalPageCount} between={3} getUrl={n => `/list/has-contents-page-${n}`}></PagenationElement>
+        <PagenationElement now={params.data.nowPageCount} max={params.data.totalPageCount} between={3} getUrl={n => `/list/${params.data.urlPrefix}-page-${n}`}></PagenationElement>
       </div>
       <table className="border-collapse bg-white text-sm font-light text-gray-900 ">
         <thead className="text-md sticky top-0 bg-gray-100 font-medium">
@@ -27,7 +27,7 @@ export function ClientTable(
         </tbody>
       </table>
       <div className="container mx-auto">
-        <PagenationElement now={params.data.nowPageCount} max={params.data.totalPageCount} between={3} getUrl={n => `/list/has-contents-page-${n}`}></PagenationElement>
+        <PagenationElement now={params.data.nowPageCount} max={params.data.totalPageCount} between={3} getUrl={n => `/list/${params.data.urlPrefix}-page-${n}`}></PagenationElement>
       </div>
     </div>
   );
@@ -53,8 +53,9 @@ function getTableBody(d: PlalaHpListResult["hpDatas"][number]) {
       break;
   }
   let childrenButton: JSX.Element;
-  if (isChildrenOpen) {
-    childrenButton = <button className="reset">▼</button>;
+  if (d.archiveUrls.length == 0) {
+    childrenButton = <button className="reset" disabled>▼</button>;
+  } else if (isChildrenOpen) {
     childrenButton = <button className="reset" onClick={() => setIsChildrenOpen(false)}>△</button>;
   } else {
     childrenButton = <button className="reset" onClick={() => setIsChildrenOpen(true)}>▼</button>;

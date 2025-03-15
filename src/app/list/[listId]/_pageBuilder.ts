@@ -5,6 +5,9 @@ export type PlalaHpListResult = {
   totalItemCount: number,
   totalPageCount: number,
   nowPageCount: number,
+  // PagenationElementのgetUrl() で渡す文字列。 has-contents などの文字を渡す。
+  // データ構造もうちょっといい感じにしたい
+  urlPrefix: string,
   hpDatas: PlalaHpData[],
 };
 type PlalaHpData = {
@@ -93,6 +96,7 @@ export class PageBuilder {
       totalPageCount: Math.ceil(Number(result.queryCount) / PPV),
       nowPageCount: requestPage.page,
       hpDatas: result.list,
+      urlPrefix: requestPage.type,
     };
   }
 }

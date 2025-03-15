@@ -11,7 +11,8 @@ export default function RootLayout({ children, }: Readonly<{ children: React.Rea
       <body className={``} >
         <div className="container mx-auto font-mono flex gap-2 p-2">
           <Link2 className="reset" href="/">Top</Link2>
-          <Link2 className="reset" href="/list/has-contents-page-1">list</Link2>
+          <Link2 className="reset" href="/list/has-contents-page-1">HPスペース一覧</Link2>
+          <Link2 className="reset" href="/list/include-error-page-1">エラーページ含む</Link2>
         </div>
         {children}
         <div>
