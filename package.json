@@ -2,6 +2,7 @@
   "main": "",
   "scripts": {
     "start": "tsx --env-file-if-exists=.env ./src/index.ts",
+    "build-ssg":"next build --debug",
     "test": "vitest run"
   },
   "type": "module",

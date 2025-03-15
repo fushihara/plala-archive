@@ -68,6 +68,9 @@ const insert_program_version = date2Sql(new Date('2025-03-04T10:52:37.961Z'));
 export class Database {
   private db!: Kysely<DbType>;
   async init() {
+    if (this.db != null) {
+      return;
+    }
     this.db = new Kysely<DbType>({
       dialect: new SqliteDialect({ database: new SQLite("database.db") }),
       // log(event): void {
@@ -375,7 +378,8 @@ export class Database {
       .where("base_url", "=", baseUrl)
       .orderBy("child_url")
       .execute()
-      .then(r => r.map(i => i.child_url));
+      // http://example.com/a////////b.html の様なURL混入の対策でフィルタリング
+      .then(r => r.map(i => i.child_url).filter(u => new URL(u).pathname.includes("//") == false));
     return allDatas;
   }
 }
