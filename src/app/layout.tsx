@@ -17,7 +17,7 @@ export default function RootLayout({ children, }: Readonly<{ children: React.Rea
         {children}
         <div>
           全てのデータは<a href="https://www.plala.or.jp/" target="_blank" className="reset">ぷららHPスペース</a>より。
-          Github:<a href="https://github.com/fushihara/xxxx" target="_blank" className="reset">レポジトリ</a>
+          Github:<a href="https://github.com/fushihara/plala-archive" target="_blank" className="reset">レポジトリ</a>
         </div>
       </body>
     </html>

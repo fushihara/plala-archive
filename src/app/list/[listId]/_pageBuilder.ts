@@ -71,9 +71,9 @@ export class PageBuilder {
     }).then(async (list) => {
       const r = {
         queryCount: Number(list.queryCount),
-        list: list.result.map<PlalaHpData>(i => {
+        list: list.result.map<PlalaHpData>((i, index) => {
           return {
-            id: i.id,
+            id: 1 + index + offset,
             baseUrl: i.base_url,
             title: i.title,
             status: i.status,
