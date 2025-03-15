@@ -1,6 +1,6 @@
 import { JSDOM, VirtualConsole } from "jsdom";
 import { parse as contentTypeParse } from "content-type";
-import { getLogger } from "./logger";
+import { getLogger } from "./logger.ts";
 import { isParameter } from "typescript";
 const logger = getLogger("ParseHtml");
 // fatal:false がデフォルト

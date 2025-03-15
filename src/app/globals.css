@@ -1,7 +1,6 @@
 @import "tailwindcss";
 
-h1,
-a,li,ul {
+:where(h1, a, li, ul, button).reset {
   all: revert;
   margin: 0;
 }

@@ -18,6 +18,6 @@ export async function startServer(dev: boolean) {
     )
   })
 }
-console.log(`startServer`);
-// await startServer(true);
-// node --experimental-strip-types --env-file=.env  src\server.dev.ts --port 54538
+await startServer(true);
+// node --experimental-strip-types --env-file=.env  src\server.dev.ts
+// node --env-file=.env  src\server.ts

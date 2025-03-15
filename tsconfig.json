@@ -14,6 +14,7 @@
     "allowImportingTsExtensions": true,
     "rewriteRelativeImportExtensions": true,
     "jsx": "preserve",
+    //"moduleResolution": "bundler",
     "types": [
       // "vitest/globals", // .test.ts の中で直接itやexceptを使う時はコメントを解除する
       "vitest/importMeta" // In-Source テストを行う時はコメントを解除する
@@ -34,9 +35,10 @@
   "include": [
     "**/*.ts",
     "**/*.tsx",
+    ".next/types/**/*.ts",
     ".ssg-output/test/types/**/*.ts",
     "next-env.d.ts",
-    ".next/types/**/*.ts"
+    ".ssg-output/types/**/*.ts"
   ],
   "exclude": [
     "node_modules"

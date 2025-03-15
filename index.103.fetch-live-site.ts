@@ -4,11 +4,11 @@
  * アクティブなサイトの一覧を active_plala_hp_space_list に記録する
  */
 import { writeFile, appendFile } from "fs/promises";
-import { comparePlalaHpSpaceUrl } from "./src/compareBaseUrl";
-import { dbInstance } from "./src/db";
-import { FetchHttp } from "./src/fetchHttp";
-import { getLogger } from "./src/logger";
-import { ParseHtml } from "./src/parseHtml";
+import { comparePlalaHpSpaceUrl } from "./src/compareBaseUrl.ts";
+import { dbInstance } from "./src/db.ts";
+import { FetchHttp } from "./src/fetchHttp.ts";
+import { getLogger } from "./src/logger.ts";
+import { ParseHtml } from "./src/parseHtml.ts";
 import dateformat from "dateformat";
 const logger = getLogger("index.103.fetchLiveSite")
 logger.info("アプリ起動");
@@ -22,6 +22,7 @@ const dbInsertDataList: {
   baseUrl: string,
   title: string,
   lastUpdateAt: Date | null,
+  status: "success" | "warn" | "error",
 }[] = [];
 for (const baseUrl of baseUrlList) {
   const index = baseUrlList.indexOf(baseUrl) + 1;
@@ -48,27 +49,31 @@ for (const baseUrl of baseUrlList) {
       `Status:${res.responseCode} ${byteStr} ${baseUrl.padEnd(50)}`,
     ].join(" ");
     if (parsed.type == "plala-error-page") {
-      await resultBuilder.addMsg([
+      await resultBuilder.addMsgOnly([
         prefix,
         `ぷららエラーページ`,
         `${parsed.errorType}`,
       ].join(" "));
+      dbInsertDataList.push({ baseUrl: baseUrl, title: `ぷららエラーページ ${parsed.errorType}`, lastUpdateAt: null, status: "error" });
     } else if (parsed.type == "text-decode-failed") {
       await resultBuilder.addMsg([
         prefix,
         ...(parsed.lastModifired ? [`LastUp:${dateformat(parsed.lastModifired, "yyyy/mm/dd HH:MM")}`] : []),
         "文字コード判定失敗"
       ].join(" "));
+      dbInsertDataList.push({ baseUrl: baseUrl, title: "文字コード判定失敗", lastUpdateAt: null, status: "warn" });
     } else if (parsed.type == "basic-auth") {
       await resultBuilder.addMsg([
         prefix,
         "Basic認証設定"
       ].join(" "));
+      dbInsertDataList.push({ baseUrl: baseUrl, title: "Basic認証あり", lastUpdateAt: null, status: "warn"  });
     } else if (parsed.type == "index-of") {
       resultBuilder.addMsg([
         prefix,
         "index Of"
       ].join(" "));
+      dbInsertDataList.push({ baseUrl: baseUrl, title: "Index of", lastUpdateAt: null, status: "warn"  });
     } else if (parsed.type == "normal") {
       await resultBuilder.addMsg([
         prefix,
@@ -79,7 +84,7 @@ for (const baseUrl of baseUrlList) {
         `title:[${parsed.title}]`
       ].join(" "));
       resultBuilder.addCountActive(parsed.lastModifired?.getFullYear() ?? null);
-      dbInsertDataList.push({ baseUrl: baseUrl, title: parsed.title, lastUpdateAt: parsed.lastModifired });
+      dbInsertDataList.push({ baseUrl: baseUrl, title: parsed.title, lastUpdateAt: parsed.lastModifired , status: "success" });
     }
   } catch (error) {
     logger.error(`${baseUrl} ${error}`);
@@ -132,6 +137,9 @@ function getResultBuilder() {
     }
     async addMsg(str: string) {
       logger.info(str);
+      this.fileSaveString.push(`<div>${this.convertHtmlLink(str)}</div>`);
+    }
+    async addMsgOnly(str: string) {
       this.fileSaveString.push(`<div>${this.convertHtmlLink(str)}</div>`);
     }
     addCountActive(lastUpdateYear: number | null) {

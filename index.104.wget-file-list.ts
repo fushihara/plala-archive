@@ -3,7 +3,6 @@ import { createInterface } from "node:readline/promises"
 import { dbInstance } from "./src/db.ts";
 import { spawn } from "node:child_process";
 import { getLogger } from "./src/logger.ts";
-
 /**
  * active_plala_hp_space_list に記録されているアクティブなサイトをそれぞれwget -r して
  * 各サイトの中にあるファイルのURL一覧を作り、 active_plala_hp_space_chile_file_list に記録する

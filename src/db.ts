@@ -41,6 +41,7 @@ interface DbType {
     id: Generated<number>;
     base_url: string;
     title: string;
+    status: "success" | "warn" | "error";
     last_up: string | null;
     insert_program_version: string;
     created_at: string;
@@ -114,6 +115,7 @@ export class Database {
       id                     INTEGER NOT NULL PRIMARY KEY,
       base_url               TEXT    NOT NULL UNIQUE CHECK(base_url<>''),
       title                  TEXT    NOT NULL,
+      status                 TEXT    NOT NULL CHECK(status='success' OR status='warn' OR status='error'),
       last_up                TEXT        NULL,
       insert_program_version TEXT    NOT NULL,
       created_at             TEXT    NOT NULL,
@@ -249,6 +251,7 @@ export class Database {
       baseUrl: string,
       title: string,
       lastUpdateAt: Date | null,
+      status: "success" | "warn" | "error",
     }[]
   ) {
     await this.db.deleteFrom("active_plala_hp_space_list").execute();
@@ -259,6 +262,7 @@ export class Database {
             base_url: item.baseUrl,
             title: item.title,
             last_up: item.lastUpdateAt ? date2Sql(item.lastUpdateAt) : null,
+            status: item.status,
             insert_program_version: insert_program_version,
             created_at: date2Sql(new Date()),
             updated_at: date2Sql(new Date()),
@@ -270,9 +274,42 @@ export class Database {
     const baseUrlList = await this.db
       .selectFrom("active_plala_hp_space_list")
       .select("active_plala_hp_space_list.base_url")
+      .where("status", "!=", "error")
       .execute()
       .then(r => r.map(i => i.base_url));
     return baseUrlList;
+  }
+  async getActivePlalaHpSpaceList2(params: {
+    includeSuccess: boolean,
+    includeWarn: boolean,
+    includeError: boolean,
+    limit?: number,
+    offset?: number,
+  }) {
+    let query = this.db
+      .selectFrom("active_plala_hp_space_list")
+      .select(["id", "base_url", "title", "status", "last_up"]);
+    if (params.includeError == false && params.includeWarn == false && params.includeSuccess == false) {
+      return { queryCount: 0, result: [] };
+    } else if (params.includeError && params.includeWarn && params.includeSuccess) {
+      // none
+    } else {
+      const l: ("success" | "warn" | "error")[] = [];
+      if (params.includeSuccess) { l.push("success"); };
+      if (params.includeWarn) { l.push("warn"); };
+      if (params.includeError) { l.push("error"); };
+      query = query.where("status", "in", l);
+    }
+    let queryCount = await query.select(this.db.fn.countAll().as("count")).executeTakeFirstOrThrow().then(r => r.count);
+    if (params.limit != null) {
+      query = query.limit(params.limit);
+    }
+    if (params.offset != null) {
+      query = query.offset(params.offset);
+    }
+    query = query.orderBy("id", "asc");
+    const result = await query.execute();
+    return { queryCount, result };
   }
   async isActivePlalaHpSpaceChildFileExist(baseUrl: string) {
     const hasData = await this.db
@@ -299,7 +336,7 @@ export class Database {
       }
     });
   }
-  async getArchivePlalaHpSpaceChildFileList(){
+  async getArchivePlalaHpSpaceChildFileList() {
     const allDatas = await this.db
       .selectFrom("active_plala_hp_space_child_file_list")
       .select("active_plala_hp_space_child_file_list.child_url")
@@ -330,6 +367,16 @@ export class Database {
           }).execute();
       }
     });
+  }
+  async getActivePlalaHpSpaceChildFileListInf(baseUrl: string) {
+    const allDatas = await this.db
+      .selectFrom("active_plala_hp_space_child_file_list_inf")
+      .select("child_url")
+      .where("base_url", "=", baseUrl)
+      .orderBy("child_url")
+      .execute()
+      .then(r => r.map(i => i.child_url));
+    return allDatas;
   }
 }
 export const dbInstance = new Database();

@@ -1,5 +1,5 @@
-import { type dbInstance } from "./db";
-import { getLogger } from "./logger";
+import { type dbInstance } from "./db.ts";
+import { getLogger } from "./logger.ts";
 const logger = getLogger("fetchHttp");
 export class FetchHttp {
   public enableLog: boolean = true;
