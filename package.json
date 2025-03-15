@@ -26,8 +26,5 @@
     "@types/dateformat": "5.0.2",
     "@types/node": "22.9.3",
     "vitest": "2.1.5"
-  },
-  "volta": {
-    "node": "22.11.0"
   }
 }

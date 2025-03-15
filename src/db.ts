@@ -53,6 +53,14 @@ interface DbType {
     insert_program_version: string;
     created_at: string;
     updated_at: string;
+  },
+  active_plala_hp_space_child_file_list_inf: {
+    id: Generated<number>;
+    base_url: string;
+    child_url: string;
+    insert_program_version: string;
+    created_at: string;
+    updated_at: string;
   }
 }
 const insert_program_version = date2Sql(new Date('2025-03-04T10:52:37.961Z'));
@@ -112,6 +120,15 @@ export class Database {
       updated_at             TEXT    NOT NULL
     ) strict ;`.execute(this.db);
     await sql<DbType>`CREATE TABLE IF NOT EXISTS active_plala_hp_space_child_file_list(
+      id                     INTEGER NOT NULL PRIMARY KEY,
+      base_url               TEXT    NOT NULL CHECK(base_url<>''),
+      child_url              TEXT    NOT NULL CHECK(child_url<>''),
+      insert_program_version TEXT    NOT NULL,
+      created_at             TEXT    NOT NULL,
+      updated_at             TEXT    NOT NULL,
+      UNIQUE(base_url,child_url)
+    ) strict ;`.execute(this.db);
+    await sql<DbType>`CREATE TABLE IF NOT EXISTS active_plala_hp_space_child_file_list_inf(
       id                     INTEGER NOT NULL PRIMARY KEY,
       base_url               TEXT    NOT NULL CHECK(base_url<>''),
       child_url              TEXT    NOT NULL CHECK(child_url<>''),
@@ -272,6 +289,38 @@ export class Database {
     await this.db.transaction().execute(async (trx) => {
       for (const item of childFileList) {
         await trx.insertInto("active_plala_hp_space_child_file_list")
+          .values({
+            base_url: baseUrl,
+            child_url: item,
+            insert_program_version: insert_program_version,
+            created_at: date2Sql(new Date()),
+            updated_at: date2Sql(new Date()),
+          }).execute();
+      }
+    });
+  }
+  async getArchivePlalaHpSpaceChildFileList(){
+    const allDatas = await this.db
+      .selectFrom("active_plala_hp_space_child_file_list")
+      .select("active_plala_hp_space_child_file_list.child_url")
+      .execute()
+    return allDatas;
+  }
+  async isActivePlalaHpSpaceChildFileExistInf(baseUrl: string) {
+    const hasData = await this.db
+      .selectFrom("active_plala_hp_space_child_file_list_inf")
+      .select("active_plala_hp_space_child_file_list_inf.id")
+      .where("base_url", "=", baseUrl)
+      .limit(1)
+      .execute()
+      .then(r => r?.[0]?.id != null);
+    return hasData;
+  }
+  async replaceActivePlalaHpSpaceChildFileListInf(baseUrl: string, childFileList: string[]) {
+    await this.db.deleteFrom("active_plala_hp_space_child_file_list_inf").where("base_url", "=", baseUrl).execute();
+    await this.db.transaction().execute(async (trx) => {
+      for (const item of childFileList) {
+        await trx.insertInto("active_plala_hp_space_child_file_list_inf")
           .values({
             base_url: baseUrl,
             child_url: item,
