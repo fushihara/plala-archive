@@ -62,6 +62,16 @@ interface DbType {
     insert_program_version: string;
     created_at: string;
     updated_at: string;
+  },
+  all_ia_archive_list: {
+    id: Generated<number>;
+    url: string;
+    archived_time_oldest: string;
+    archived_time_latest: string;
+    archived_url_count: number;
+    insert_program_version: string;
+    created_at: string;
+    updated_at: string;
   }
 }
 const insert_program_version = date2Sql(new Date('2025-03-04T10:52:37.961Z'));
@@ -141,6 +151,17 @@ export class Database {
       created_at             TEXT    NOT NULL,
       updated_at             TEXT    NOT NULL,
       UNIQUE(base_url,child_url)
+    ) strict ;`.execute(this.db);
+    await sql<DbType>`CREATE TABLE IF NOT EXISTS all_ia_archive_list(
+      id                     INTEGER NOT NULL PRIMARY KEY,
+      url                    TEXT    NOT NULL UNIQUE CHECK(url<>''),
+      archived_time_oldest   TEXT    NOT NULL,
+      archived_time_latest   TEXT    NOT NULL,
+      archived_url_count     INTEGER NOT NULL,
+      insert_program_version TEXT    NOT NULL,
+      created_at             TEXT    NOT NULL,
+      updated_at             TEXT    NOT NULL,
+      UNIQUE(url)
     ) strict ;`.execute(this.db);
   }
   async getPrimaryKeyList(prefix: string) {
@@ -374,13 +395,40 @@ export class Database {
   async getActivePlalaHpSpaceChildFileListInf(baseUrl: string) {
     const allDatas = await this.db
       .selectFrom("active_plala_hp_space_child_file_list_inf")
-      .select("child_url")
-      .where("base_url", "=", baseUrl)
-      .orderBy("child_url")
+      .leftJoin("all_ia_archive_list","all_ia_archive_list.url","active_plala_hp_space_child_file_list_inf.child_url")
+      .select([
+        "active_plala_hp_space_child_file_list_inf.child_url",
+        "all_ia_archive_list.archived_time_latest"
+      ])
+      .where("active_plala_hp_space_child_file_list_inf.base_url", "=", baseUrl)
+      .orderBy("active_plala_hp_space_child_file_list_inf.child_url")
       .execute()
       // http://example.com/a////////b.html の様なURL混入の対策でフィルタリング
-      .then(r => r.map(i => i.child_url).filter(u => new URL(u).pathname.includes("//") == false));
+      .then(r => r.filter(u => new URL(u.child_url).pathname.includes("//") == false));
     return allDatas;
+  }
+  async upsertAllIaArchiveList(datas: {
+    url: string,
+    archived_time_latest: Date,
+    archived_time_oldest: Date,
+    archived_url_count: number,
+  }[]) {
+    await this.db.transaction().execute(async (trx) => {
+      await trx.deleteFrom("all_ia_archive_list").execute();
+      for (const item of datas) {
+        await trx.insertInto("all_ia_archive_list")
+          .values({
+            url: item.url,
+            archived_time_latest: date2Sql(item.archived_time_latest),
+            archived_time_oldest: date2Sql(item.archived_time_oldest),
+            archived_url_count: item.archived_url_count,
+            insert_program_version: insert_program_version,
+            created_at: date2Sql(new Date()),
+            updated_at: date2Sql(new Date()),
+          }).execute();
+      }
+    });
+
   }
 }
 export const dbInstance = new Database();

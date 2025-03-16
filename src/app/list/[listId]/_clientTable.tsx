@@ -3,6 +3,7 @@ import { useState, type ReactNode } from "react";
 import { type PlalaHpListResult } from "./_pageBuilder";
 import { JSX } from "react/jsx-runtime";
 import { PagenationElement } from "../../_pagenation/pagenationElement";
+import dateformat from "dateformat";
 export function ClientTable(
   params: { data: PlalaHpListResult, children?: ReactNode, },
 ) {
@@ -71,18 +72,56 @@ function getTableBody(d: PlalaHpListResult["hpDatas"][number]) {
     </tr>
   );
   if (isChildrenOpen) {
-    const td: JSX.Element[] = [];
-    for (const c of d.archiveUrls) {
-      result.push(
-        <tr
-          className="transition duration-300 ease-in-out hover:bg-gray-100"
-          key={`${d.id}-children-${c.originalUrl}`}
-        >
-          <td className={"border border-black px-1 py-1 text-left"} colSpan={5}
-          ><a href={c.originalUrl} className="reset" target="_blank">{c.originalUrl}</a></td>
-        </tr>
-      );
-    }
+    result.push(
+      <tr
+        className="transition duration-300 ease-in-out hover:bg-gray-100"
+        key={`${d.id}-children`}
+      >
+        <td className={"border border-black px-1 py-1 text-left"} colSpan={5}
+        >{ChildUrlList(d.archiveUrls)}</td>
+      </tr>
+    );
   }
   return result;
+}
+function ChildUrlList(archiveUrls: PlalaHpListResult["hpDatas"][number]["archiveUrls"]) {
+  if (archiveUrls.length == 0) {
+    return <div>子URLなし</div>
+  }
+  const tbody: JSX.Element[] = [];
+  for (const a of archiveUrls) {
+    let iaTimestampStr: JSX.Element | string = "";
+    let iaTimestampClass = "";
+    if (a.iaArchiveDateMs == null) {
+      iaTimestampStr = "IAに保存なし";
+      iaTimestampClass = "text-gray-400"
+    } else {
+      const iaUrl = `https://web.archive.org/web/${dateformat(new Date(), "yyyymmddHHMMss")}/${a.originalUrl}`;
+      iaTimestampStr = <a href={iaUrl} className="reset">{dateformat(new Date(a.iaArchiveDateMs), "yyyy/mm/dd HH:MM:ss")}</a>;
+    }
+    tbody.push(
+      <tr
+        className="transition duration-300 ease-in-out hover:bg-gray-100"
+        key={a.originalUrl}
+      >
+        <td className={"border border-black px-1 py-1 text-left"}
+        ><a href={a.originalUrl} className="reset" target="_blank">{a.originalUrl}</a></td>
+        <td className={"border border-black px-1 py-1 text-left " + iaTimestampClass}
+        >{iaTimestampStr}</td>
+      </tr>
+    );
+  }
+  return (
+    <table className="border-collapse bg-white text-sm font-light text-gray-900 ">
+      <thead className="text-md sticky top-0 bg-gray-100 font-medium">
+        <tr>
+          <th scope="col" className="whitespace-nowrap border border-black px-1 text-right">IA保存日時</th>
+          <th scope="col" className="whitespace-nowrap border border-black px-1 text-right">URL</th>
+        </tr>
+      </thead>
+      <tbody>
+        {tbody}
+      </tbody>
+    </table>
+  );
 }

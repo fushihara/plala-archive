@@ -20,6 +20,7 @@ type PlalaHpData = {
 }
 type ArchiveFileData = {
   originalUrl: string,
+  iaArchiveDateMs: number | null,
 };
 export type StaticParams = {
   type: string, page: number
@@ -85,7 +86,10 @@ export class PageBuilder {
       for (const s of r.list) {
         await dbInstance.getActivePlalaHpSpaceChildFileListInf(s.baseUrl).then(childrenUrlList => {
           for (const c of childrenUrlList) {
-            s.archiveUrls.push({ originalUrl: c });
+            s.archiveUrls.push({
+              originalUrl: c.child_url,
+              iaArchiveDateMs: c.archived_time_latest == null ? null : new Date(c.archived_time_latest).getTime(),
+            });
           }
         })
       }
